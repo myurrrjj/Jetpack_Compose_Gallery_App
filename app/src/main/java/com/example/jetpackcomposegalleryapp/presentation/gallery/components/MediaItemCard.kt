@@ -10,11 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.compositionLocalWithHostDefaultOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,7 +23,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
@@ -38,35 +41,35 @@ fun MediaItemCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-with(sharedTransitionScope) {
-    Box(
-        modifier = modifier
-            .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .bouncyClick(onClick = onClick)
-            .sharedElement(
-                sharedContentState = rememberSharedContentState(key = "media_${media.id}"),
-                animatedVisibilityScope = animatedVisibilityScope
+    val imageRequest = remember(media.uriString, media.id) {
+        ImageRequest.Builder(context)
+            .data(media.uriString)
+            .crossfade(true)
+            .crossfade(300)
+            .size(Size(512, 512))
+            .memoryCacheKey("${media.id}_thumbnail")
+            .diskCacheKey("${media.id}_thumbnail")
+            .build()
+    }
+    with(sharedTransitionScope) {
+        Box(
+            modifier = modifier
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .sharedElement(
+                    sharedContentState = rememberSharedContentState(key = "media_${media.id}"),
+                    animatedVisibilityScope = animatedVisibilityScope
+                )
+                .bouncyClick(onClick = onClick)
+
+        ) {
+            AsyncImage(
+                model = imageRequest,
+                contentDescription = media.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
-            .bouncyClick(onClick = onClick)
-
-    ) {
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(media.uriString)
-                .crossfade(true)
-                .crossfade(300)
-                .size(Size(512, 512))
-                .memoryCacheKey("${media.id}_thumbnail")
-                .diskCacheKey("${media.id}_thumbnail")
-                .build(),
-            contentDescription = media.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-
-        if (media.isVideo) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -74,23 +77,45 @@ with(sharedTransitionScope) {
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.4f)
+                                Color.Black.copy(alpha = 0.0f),
+                                Color.Black.copy(alpha = 0.5f)
                             ),
-                            startY = 100f
+                            startY = 150f
                         )
                     )
             )
 
-            Icon(
-                imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier
-                    .size(32.dp)
-                    .align(Alignment.BottomStart)
-                    .padding(8.dp)
-            )
+            if (media.isVideo) {
+
+
+                Icon(
+                    imageVector = Icons.Rounded.PlayCircle,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .size(36.dp)
+                        .align(Alignment.Center)
+                )
+                if (media.duration != null) {
+                    Text(
+                        text = formatDuration(media.duration),
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.align(
+                            Alignment.BottomEnd
+                        ).padding(8.dp)
+                    )
+
+
+                }
+            }
         }
     }
 }
+private fun formatDuration(durationMs: Long): String {
+    val totalSeconds = durationMs / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format("%02d:%02d", minutes, seconds)
 }

@@ -181,6 +181,7 @@ fun GalleryScreen(
                 ) {
                     items(
                         count = state.mediaList.size,
+                        contentType = { index -> if (state.mediaList[index].isVideo) "video" else "photo" },
                         key = { index -> state.mediaList[index].id }) { index ->
                         MediaItemCard(
                             media = state.mediaList[index],
