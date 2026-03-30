@@ -3,29 +3,17 @@ package com.example.jetpackcomposegalleryapp
 import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
-import coil.decode.VideoFrameDecoder
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
+import javax.inject.Provider
 
 @HiltAndroidApp
 class GalleryApplication : Application(), ImageLoaderFactory {
+
+    @Inject
+    lateinit var imageLoaderProvider: Provider<ImageLoader>
+
     override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
-            .components { add(VideoFrameDecoder.Factory()) }
-            .memoryCache {
-                MemoryCache.Builder(this)
-                    .maxSizePercent(.25)
-                    .build()
-            }
-            .diskCache {
-                DiskCache.Builder()
-                    .directory(this.cacheDir.resolve("gallery_image_cache"))
-                    .maxSizePercent(.05)
-                    .build()
-            }
-            .respectCacheHeaders(false)
-            .crossfade(true)
-            .build()
+        return imageLoaderProvider.get()
     }
 }

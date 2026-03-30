@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -44,11 +45,9 @@ fun MediaItemCard(
     val imageRequest = remember(media.uriString, media.id) {
         ImageRequest.Builder(context)
             .data(media.uriString)
-            .crossfade(true)
-            .crossfade(300)
-            .size(Size(512, 512))
-            .memoryCacheKey("${media.id}_thumbnail")
-            .diskCacheKey("${media.id}_thumbnail")
+            .size(200)
+//            .memoryCacheKey("${media.id}_thumbnail")
+//            .diskCacheKey("${media.id}_thumbnail")
             .build()
     }
     with(sharedTransitionScope) {
@@ -68,6 +67,7 @@ fun MediaItemCard(
                 model = imageRequest,
                 contentDescription = media.name,
                 contentScale = ContentScale.Crop,
+                filterQuality = FilterQuality.Low,
                 modifier = Modifier.fillMaxSize()
             )
             Box(
