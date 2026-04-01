@@ -1,5 +1,9 @@
 package com.example.jetpackcomposegalleryapp.domain.model
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+//@Parcelize
 data class MediaAsset(
     val id: Long,
     val uriString: String,
@@ -7,11 +11,12 @@ data class MediaAsset(
     val dateAdded: Long,
     val mimeType: String,
     val size: Long,
-    val width:Int?,
-    val height:Int?,
-    val duration:Long?
+    val width: Int?,
+    val height: Int?,
+    val duration: Long?,
+    val folderName: String?
 
-){
+) {
     val isVideo: Boolean
-        get() =mimeType.startsWith("video/")
+        get() = mimeType.startsWith("video/")
 }

@@ -52,6 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.jetpackcomposegalleryapp.core.presentation.components.bouncyClick
 import com.example.jetpackcomposegalleryapp.core.util.rememberScrollingUp
+import com.example.jetpackcomposegalleryapp.presentation.gallery.components.AlbumCard
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.FloatingGalleryBar
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.GalleryTab
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.MediaItemCard
@@ -185,9 +186,10 @@ fun GalleryScreen(
                     onClick = { permissionLauncher.launch(permissionToRequest) })
             }
 
-            state.displayedMediaList.isEmpty() -> {
+            (state.selectedTab == GalleryTab.ALBUMS && state.albums.isEmpty()) ||
+                    (state.selectedTab != GalleryTab.ALBUMS && state.displayedMediaList.isEmpty()) -> {
                 EmptyStateView(
-                    title = "No Media Found",
+                    title = if (state.selectedTab == GalleryTab.ALBUMS) "No Albums Found" else "No Media Found",
                     description = "Your gallery is completely empty. Take some photos to get started!",
                     buttonText = "Refresh",
                     onClick = { viewModel.setEvent(GalleryEvent.LoadMedia) })
@@ -208,29 +210,46 @@ fun GalleryScreen(
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                     modifier = Modifier.fillMaxSize()
-                ) {
-                    items(
-                        count = state.displayedMediaList.size,
-                        contentType = { index -> if (state.displayedMediaList[index].isVideo) "video" else "photo" },
-                        key = { index -> state.displayedMediaList[index].id }) { index ->
-                        val mediaItem = state.displayedMediaList[index]
-                        MediaItemCard(
-                            media = state.displayedMediaList[index],
-                            onClick = remember(mediaItem.id) {
-                                { viewModel.setEvent(GalleryEvent.MediaClicked(mediaItem.id)) }
-                            },
-                            modifier = Modifier.animateItem(),
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        )
+                )
+                {
+                    if (state.selectedTab == GalleryTab.ALBUMS) {
+                        items(
+                            count = state.albums.size,
+                            key = { index -> state.albums[index].name ?: "Unknown" }
+                        ) { index ->
+                            AlbumCard(album = state.albums[index], onClick = {})
+
+                        }
+                    } else {
+                        items(
+                            count = state.displayedMediaList.size,
+                            contentType = { index -> if (state.displayedMediaList[index].isVideo) "video" else "photo" },
+                            key = { index -> state.displayedMediaList[index].id }) { index ->
+                            val mediaItem = state.displayedMediaList[index]
+                            MediaItemCard(
+                                media = state.displayedMediaList[index],
+                                onClick = remember(mediaItem.id) {
+                                    { viewModel.setEvent(GalleryEvent.MediaClicked(mediaItem.id)) }
+                                },
+                                modifier = Modifier.animateItem(),
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope,
+                            )
+                        }
                     }
                 }
 
 
             }
         }
-        val shouldShowBar by remember(state.displayedMediaList.isNotEmpty(), isScrollingUp) {
-            derivedStateOf { state.displayedMediaList.isNotEmpty() && isScrollingUp }
+        val hasContent = if (state.selectedTab == GalleryTab.ALBUMS) {
+            state.albums.isNotEmpty()
+        } else {
+            state.displayedMediaList.isNotEmpty()
+        }
+
+        val shouldShowBar by remember(hasContent, isScrollingUp) {
+            derivedStateOf { hasContent && isScrollingUp }
         }
 
         val barOffset by animateDpAsState(
@@ -259,9 +278,9 @@ fun GalleryScreen(
 //                ) {
             FloatingGalleryBar(
                 selectedTab = state.selectedTab,
-                onClick = { coroutineScope.launch{ gridState.animateScrollToItem(0) }},
+                onClick = { coroutineScope.launch { gridState.animateScrollToItem(0) } },
                 onTabSelected = { tab ->
-                   viewModel.setEvent(GalleryEvent.onTabSelected(tab))
+                    viewModel.setEvent(GalleryEvent.onTabSelected(tab))
                     coroutineScope.launch {
                         delay(500)
                         gridState.animateScrollToItem(0)

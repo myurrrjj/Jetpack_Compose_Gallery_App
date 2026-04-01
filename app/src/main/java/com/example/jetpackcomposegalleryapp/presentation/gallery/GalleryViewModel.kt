@@ -2,17 +2,14 @@ package com.example.jetpackcomposegalleryapp.presentation.gallery
 
 import androidx.lifecycle.viewModelScope
 import com.example.jetpackcomposegalleryapp.core.presentation.mvi.BaseViewModel
-import com.example.jetpackcomposegalleryapp.domain.model.MediaAsset
 import com.example.jetpackcomposegalleryapp.domain.repository.MediaRepository
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.GalleryTab
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
-import kotlinx.serialization.descriptors.setSerialDescriptor
 import javax.inject.Inject
 
 @HiltViewModel
@@ -72,8 +69,15 @@ class GalleryViewModel @Inject constructor(
                 }
                 .collect { media ->
                     val immutableMedia = media.toImmutableList()
+                    val processedAlbums = immutableMedia
+                        .groupBy { it.folderName }
+                        .map { (folderName,items)->
+                            Album(name =folderName,items.size,items.first())
+                        }
+                        .sortedBy { it.name }
+                        .toImmutableList()
 
-                    setState { copy(isLoading = false, masterMediaList = immutableMedia,displayedMediaList=immutableMedia) }
+                    setState { copy(isLoading = false, masterMediaList = immutableMedia,displayedMediaList=immutableMedia,albums = processedAlbums) }
                 }
         }
     }

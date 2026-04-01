@@ -22,9 +22,10 @@ class MediaStoreRepositoryImpl(private val contentResolver: ContentResolver) : M
             MediaStore.Files.FileColumns.SIZE,
             MediaStore.MediaColumns.WIDTH,
             MediaStore.MediaColumns.HEIGHT,
-            MediaStore.Video.VideoColumns.DURATION
+            MediaStore.Video.VideoColumns.DURATION, MediaStore.MediaColumns.BUCKET_DISPLAY_NAME
         )
-        val selection = "${MediaStore.Files.FileColumns.MEDIA_TYPE} = ? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE} = ?"
+        val selection =
+            "${MediaStore.Files.FileColumns.MEDIA_TYPE} = ? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE} = ?"
         val selectionArgs = arrayOf(
             MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(),
             MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString()
@@ -45,6 +46,8 @@ class MediaStoreRepositoryImpl(private val contentResolver: ContentResolver) : M
                 val widthColumn = cursor.getColumnIndex(MediaStore.MediaColumns.WIDTH)
                 val heightColumn = cursor.getColumnIndex(MediaStore.MediaColumns.HEIGHT)
                 val durationColumn = cursor.getColumnIndex(MediaStore.Video.VideoColumns.DURATION)
+                val bucketColumn =
+                    cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.BUCKET_DISPLAY_NAME)
                 while (cursor.moveToNext()) {
                     val id = cursor.getLong(idColumn)
                     val name = cursor.getString(nameColumn) ?: ""
@@ -59,6 +62,7 @@ class MediaStoreRepositoryImpl(private val contentResolver: ContentResolver) : M
                         if (heightColumn != -1 && !cursor.isNull(heightColumn)) cursor.getInt(
                             heightColumn
                         ) else null
+                    val folderName = cursor.getString(bucketColumn) ?: "Unknown"
                     val duration =
                         if (durationColumn != -1 && !cursor.isNull(durationColumn)) cursor.getLong(
                             durationColumn
@@ -79,8 +83,10 @@ class MediaStoreRepositoryImpl(private val contentResolver: ContentResolver) : M
                             size = size,
                             width = width,
                             height = height,
-                            duration = duration
-                        )
+                            duration = duration,
+                            folderName = folderName
+
+                            )
                     )
                 }
 

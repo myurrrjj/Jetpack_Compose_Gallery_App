@@ -8,27 +8,34 @@ import com.example.jetpackcomposegalleryapp.presentation.gallery.components.Gall
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
+
+data class Album(
+    val name: String?,
+    val mediaCount: Int,
+    val coverMedia: MediaAsset
+)
 data class GalleryState(
     val isLoading: Boolean = true,
     val masterMediaList: ImmutableList<MediaAsset> = persistentListOf(),
     val displayedMediaList: ImmutableList<MediaAsset> = persistentListOf(),
+    val albums: ImmutableList<Album> = persistentListOf(),
     val error: String? = null,
     val hasPermission: Boolean = false,
     val selectedTab: GalleryTab = GalleryTab.ALL
 
 
-    ) : ViewState
+) : ViewState
 
 sealed class GalleryEvent : ViewEvent {
     object LoadMedia : GalleryEvent()
     data class PermissionResult(val isGranted: Boolean) : GalleryEvent()
     data class MediaClicked(val mediaId: Long) : GalleryEvent()
-    data class onTabSelected(val tab: GalleryTab): GalleryEvent()
+    data class onTabSelected(val tab: GalleryTab) : GalleryEvent()
 
 }
 
 sealed class GalleryEffect : ViewSideEffect {
     object RequestPermission : GalleryEffect()
-    data class NavigateToDetail(val mediaId:Long): GalleryEffect()
+    data class NavigateToDetail(val mediaId: Long) : GalleryEffect()
 
 }

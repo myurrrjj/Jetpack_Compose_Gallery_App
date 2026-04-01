@@ -8,6 +8,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
+    id("kotlin-parcelize")
+
 }
 
 android {
@@ -50,6 +52,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
     implementation("io.coil-kt:coil-video:2.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
     implementation(platform("androidx.compose:compose-bom:2026.03.01"))
