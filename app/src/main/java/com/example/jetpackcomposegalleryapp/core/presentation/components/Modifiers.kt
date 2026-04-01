@@ -1,5 +1,6 @@
 package com.example.jetpackcomposegalleryapp.core.presentation.components
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -13,6 +14,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 
 fun Modifier.bouncyClick(
  enabled :Boolean  = true,
@@ -20,7 +22,7 @@ fun Modifier.bouncyClick(
 ):Modifier  = composed{
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val haptic = LocalHapticFeedback.current
+    val view = LocalView.current
     val scale by animateFloatAsState(
         targetValue = if (isPressed) .92f else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)
@@ -35,8 +37,8 @@ fun Modifier.bouncyClick(
             indication = null,
             enabled = enabled,
             onClick = {
-                haptic.performHapticFeedback(hapticFeedbackType = HapticFeedbackType.LongPress)
-                onClick() }
+view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+onClick() }
         )
 
 

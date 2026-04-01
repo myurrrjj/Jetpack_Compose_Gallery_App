@@ -45,24 +45,30 @@ fun MediaItemCard(
     val imageRequest = remember(media.uriString, media.id) {
         ImageRequest.Builder(context)
             .data(media.uriString)
-            .size(200)
+            .size(300)
+            .setParameter("is_thumbnail", true)
+//            .size(200)
 //            .memoryCacheKey("${media.id}_thumbnail")
 //            .diskCacheKey("${media.id}_thumbnail")
             .build()
     }
     with(sharedTransitionScope) {
+
         Box(
             modifier = modifier
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .sharedElement(
+                .sharedBounds(
                     sharedContentState = rememberSharedContentState(key = "media_${media.id}"),
-                    animatedVisibilityScope = animatedVisibilityScope
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
                 )
+
                 .bouncyClick(onClick = onClick)
 
         ) {
+
             AsyncImage(
                 model = imageRequest,
                 contentDescription = media.name,
@@ -83,6 +89,7 @@ fun MediaItemCard(
                             startY = 150f
                         )
                     )
+
             )
 
             if (media.isVideo) {

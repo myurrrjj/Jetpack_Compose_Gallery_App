@@ -7,11 +7,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -22,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Lock
@@ -32,14 +36,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.jetpackcomposegalleryapp.core.presentation.components.bouncyClick
+import com.example.jetpackcomposegalleryapp.core.util.rememberScrollingUp
+import com.example.jetpackcomposegalleryapp.presentation.gallery.components.FloatingGalleryBar
+import com.example.jetpackcomposegalleryapp.presentation.gallery.components.GalleryTab
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.MediaItemCard
 
 @Composable
@@ -113,12 +125,17 @@ fun GalleryScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedContentScope
 ) {
+    val gridState = rememberLazyGridState()
+    val isScrollingUp = rememberScrollingUp(gridState)
+    var selectedTab by remember { mutableStateOf(GalleryTab.ALL) }
+
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val permissionToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
     } else {
         arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
+
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -167,14 +184,21 @@ fun GalleryScreen(
                     title = "No Media Found",
                     description = "Your gallery is completely empty. Take some photos to get started!",
                     buttonText = "Refresh",
-                    onClick = { viewModel.setEvent(GalleryEvent.LoadMedia) }
-                )
+                    onClick = { viewModel.setEvent(GalleryEvent.LoadMedia) })
             }
 
             else -> {
                 LazyVerticalGrid(
+                    state = gridState,
                     columns = GridCells.Adaptive(minSize = 120.dp),
-                    contentPadding = WindowInsets.systemBars.asPaddingValues(),
+
+                    contentPadding = PaddingValues(
+                        top = WindowInsets.systemBars.asPaddingValues().calculateTopPadding(),
+                        bottom = WindowInsets.systemBars.asPaddingValues()
+                            .calculateBottomPadding() + 80.dp,
+                        start = 2.dp,
+                        end = 2.dp
+                    ),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                     modifier = Modifier.fillMaxSize()
@@ -187,7 +211,8 @@ fun GalleryScreen(
                             media = state.mediaList[index],
                             onClick = {
                                 viewModel.setEvent(GalleryEvent.MediaClicked(state.mediaList[index].id))
-                            }, modifier = Modifier.animateItem(),
+                            },
+                            modifier = Modifier.animateItem(),
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
                         )
@@ -197,5 +222,53 @@ fun GalleryScreen(
 
             }
         }
+        val barOffset by animateDpAsState(
+            targetValue = if (state.mediaList.isNotEmpty() && isScrollingUp) 0.dp else 150.dp,
+            label = "barOffset"
+        )
+        val barAlpha by animateFloatAsState(
+            targetValue = if (state.mediaList.isNotEmpty() && isScrollingUp) 1f else 0f,
+            label = "barAlpha"
+        )
+//        AnimatedVisibility(
+//            visible = state.mediaList.isNotEmpty() && isScrollingUp,
+//            enter =EnterTransition.None,
+//            exit =  ExitTransition.None,
+//            modifier = Modifier
+//                .align(Alignment.BottomCenter)
+//                .padding(bottom = WindowInsets.systemBars.asPaddingValues().calculateBottomPadding() + 24.dp)
+//                .zIndex(1f)
+//        ) {
+        with(sharedTransitionScope) {
+//                Box(
+//                    modifier = Modifier.sharedElement(
+//                        sharedContentState = rememberSharedContentState(key = "floating_navigation_bar"),
+//                        animatedVisibilityScope = animatedVisibilityScope,zIndexInOverlay = 1f
+//                    )
+//                ) {
+            FloatingGalleryBar(
+                selectedTab = selectedTab,
+                onTabSelected = { tab ->
+                    selectedTab = tab
+                }, modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        bottom = WindowInsets.systemBars.asPaddingValues()
+                            .calculateBottomPadding() + 24.dp
+                    )
+                    .graphicsLayer {
+                        translationY = barOffset.toPx()
+                        alpha = barAlpha
+                    }
+                    .zIndex(1f)
+                    .sharedElement(
+                        sharedContentState = rememberSharedContentState(key = "floating_navigation_bar"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        zIndexInOverlay = 1f
+                    )
+            )
+
+        }
+
     }
 }

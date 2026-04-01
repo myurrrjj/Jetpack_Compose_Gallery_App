@@ -13,6 +13,7 @@ import coil.fetch.Fetcher
 import coil.request.Options
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.core.graphics.drawable.toDrawable
 
 class NativeThumbnailFetcher(
     private val uri: Uri,
@@ -26,7 +27,7 @@ class NativeThumbnailFetcher(
                 val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     context.contentResolver.loadThumbnail(
                         uri,
-                        android.util.Size(400, 400),
+                        android.util.Size(350, 350),
                         null
                     )
                 } else {
@@ -44,7 +45,7 @@ class NativeThumbnailFetcher(
 
                 if (bitmap != null) {
                     DrawableResult(
-                        drawable = BitmapDrawable(context.resources, bitmap),
+                        drawable = bitmap.toDrawable(context.resources),
                         isSampled = true,
                         dataSource = DataSource.DISK
                     )
@@ -57,7 +58,9 @@ class NativeThumbnailFetcher(
 
     class Factory(private val context: Context) : Fetcher.Factory<Uri> {
         override fun create(data: Uri, options: Options, imageLoader: ImageLoader): Fetcher? {
-            if (data.scheme == "content" && data.authority == "media") {
+            val isThumbnail = options.parameters.value("is_thumbnail") as? Boolean ?: false
+
+            if (isThumbnail && data.scheme == "content" && data.authority == "media") {
                 val isVideo = data.toString().contains("video")
                 return NativeThumbnailFetcher(data, context, isVideo)
             }
