@@ -5,4 +5,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface MediaRepository {
     fun getAllMedia(): Flow<List<MediaAsset>>
+
 }

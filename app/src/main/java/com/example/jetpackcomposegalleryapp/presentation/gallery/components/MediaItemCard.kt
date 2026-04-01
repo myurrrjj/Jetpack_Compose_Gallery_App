@@ -29,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import coil.size.Size
 import com.example.jetpackcomposegalleryapp.core.presentation.components.bouncyClick
 import com.example.jetpackcomposegalleryapp.domain.model.MediaAsset
 
@@ -43,9 +42,7 @@ fun MediaItemCard(
 ) {
     val context = LocalContext.current
     val imageRequest = remember(media.uriString, media.id) {
-        ImageRequest.Builder(context)
-            .data(media.uriString)
-            .size(300)
+        ImageRequest.Builder(context).data(media.uriString).size(300)
             .setParameter("is_thumbnail", true)
 //            .size(200)
 //            .memoryCacheKey("${media.id}_thumbnail")
@@ -76,25 +73,28 @@ fun MediaItemCard(
                 filterQuality = FilterQuality.Low,
                 modifier = Modifier.fillMaxSize()
             )
+            val overlayBrush = remember {
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        Color.Black.copy(alpha = 0.0f),
+                        Color.Black.copy(alpha = 0.5f)
+                    ), startY = 150f
+                )
+            }
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.0f),
-                                Color.Black.copy(alpha = 0.5f)
-                            ),
-                            startY = 150f
-                        )
+                        overlayBrush
                     )
 
             )
 
             if (media.isVideo) {
-
-
+                val formattedDuration = remember(media.duration) {
+                    media.duration?.let { formatDuration(it) }
+                }
                 Icon(
                     imageVector = Icons.Rounded.PlayCircle,
                     contentDescription = null,
@@ -103,15 +103,17 @@ fun MediaItemCard(
                         .size(36.dp)
                         .align(Alignment.Center)
                 )
-                if (media.duration != null) {
+                if (formattedDuration != null) {
                     Text(
-                        text = formatDuration(media.duration),
+                        text = formattedDuration,
                         color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.align(
-                            Alignment.BottomEnd
-                        ).padding(8.dp)
+                        modifier = Modifier
+                            .align(
+                                Alignment.BottomEnd
+                            )
+                            .padding(8.dp)
                     )
 
 
@@ -120,6 +122,7 @@ fun MediaItemCard(
         }
     }
 }
+
 private fun formatDuration(durationMs: Long): String {
     val totalSeconds = durationMs / 1000
     val minutes = totalSeconds / 60

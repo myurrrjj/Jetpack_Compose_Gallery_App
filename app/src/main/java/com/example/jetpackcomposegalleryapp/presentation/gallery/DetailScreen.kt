@@ -13,10 +13,10 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -38,10 +38,12 @@ fun DetailScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle(
     )
     val context = LocalContext.current
-    val initialIndex = state.mediaList.indexOfFirst { it.id == initialMediaId }.coerceAtLeast(0)
+    val initialIndex = remember(initialMediaId, state.displayedMediaList) {
+        state.displayedMediaList.indexOfFirst { it.id == initialMediaId }.coerceAtLeast(0)
+    }
     val pagerState = rememberPagerState(
         initialPage = initialIndex,
-        pageCount = { state.mediaList.size }
+        pageCount = { state.displayedMediaList.size }
     )
 
 
@@ -54,21 +56,27 @@ fun DetailScreen(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
-            pageSpacing = 16.dp
+            pageSpacing = 16.dp,
+            key = {page -> state.displayedMediaList[page].id}
         ) { page ->
-            val media = state.mediaList[page]
+            val media = state.displayedMediaList[page]
             with(sharedTransitionScope) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
+                val imageRequest = remember(media.uriString) {
+                    ImageRequest.Builder(context)
                         .data(media.uriString)
-                        .build(), contentDescription = media.name, contentScale = ContentScale.Fit,
-                     modifier = Modifier
+                        .build()
+                }
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = media.name,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
                         .fillMaxSize()
-                         .sharedBounds(
-                             sharedContentState = rememberSharedContentState(key = "media_${media.id}"),
-                             animatedVisibilityScope = animatedVisibilityScope,
-                             resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
-                         )
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState(key = "media_${media.id}"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                        )
                 )
             }
         }
@@ -95,7 +103,7 @@ fun DetailScreen(
                     .zIndex(1f)
                     .sharedElement(
                         sharedContentState = rememberSharedContentState(key = "floating_navigation_bar"),
-                        animatedVisibilityScope = animatedVisibilityScope,zIndexInOverlay = 1f
+                        animatedVisibilityScope = animatedVisibilityScope, zIndexInOverlay = 1f
                     )
             )
         }

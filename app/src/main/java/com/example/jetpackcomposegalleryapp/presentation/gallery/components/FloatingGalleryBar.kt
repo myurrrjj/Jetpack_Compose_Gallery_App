@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.jetpackcomposegalleryapp.core.presentation.components.bouncyClick
+import kotlinx.coroutines.Job
 
 enum class GalleryTab(val title: String) {
     ALL("All"), ALBUMS("Albums"), VIDEOS("Videos")
@@ -26,7 +27,10 @@ enum class GalleryTab(val title: String) {
 
 @Composable
 fun FloatingGalleryBar(
-    selectedTab: GalleryTab, onTabSelected: (GalleryTab) -> Unit, modifier: Modifier = Modifier
+    selectedTab: GalleryTab,
+    onTabSelected: (GalleryTab) -> Unit,
+    modifier: Modifier = Modifier,
+    onClick: () -> Job
 ) {
     Row(
         modifier = modifier
@@ -41,7 +45,7 @@ fun FloatingGalleryBar(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
 
     ) {
-        GalleryTab.values().forEachIndexed { index, tab ->
+        GalleryTab.entries.forEachIndexed { index, tab ->
             val isSelected = selectedTab == tab
             val containerColor by animateColorAsState(
                 targetValue = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
@@ -57,7 +61,12 @@ fun FloatingGalleryBar(
                 modifier = Modifier
                     .clip(CircleShape)
                     .background(containerColor)
-                    .bouncyClick { onTabSelected(tab) }
+                    .bouncyClick {
+                        onTabSelected(tab)
+                        if (selectedTab == tab) {
+                            onClick()
+                        }
+                    }
                     .padding(horizontal = 24.dp, vertical = 12.dp)) {
                 Text(
                     text = tab.title,

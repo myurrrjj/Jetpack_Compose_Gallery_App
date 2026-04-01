@@ -35,9 +35,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +55,8 @@ import com.example.jetpackcomposegalleryapp.core.util.rememberScrollingUp
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.FloatingGalleryBar
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.GalleryTab
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.MediaItemCard
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun EmptyStateView(
@@ -120,20 +124,22 @@ fun EmptyStateView(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GalleryScreen(
-    viewModel: GalleryViewModel = hiltViewModel(),
     onNavigateToDetail: (Long) -> Unit,
     sharedTransitionScope: SharedTransitionScope,
-    animatedVisibilityScope: AnimatedContentScope
+    animatedVisibilityScope: AnimatedContentScope,
+    viewModel: GalleryViewModel = hiltViewModel()
 ) {
     val gridState = rememberLazyGridState()
     val isScrollingUp = rememberScrollingUp(gridState)
     var selectedTab by remember { mutableStateOf(GalleryTab.ALL) }
-
+    val coroutineScope = rememberCoroutineScope()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val permissionToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
-    } else {
-        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    val permissionToRequest = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
+        } else {
+            arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
     }
 
 
@@ -179,7 +185,7 @@ fun GalleryScreen(
                     onClick = { permissionLauncher.launch(permissionToRequest) })
             }
 
-            state.mediaList.isEmpty() -> {
+            state.displayedMediaList.isEmpty() -> {
                 EmptyStateView(
                     title = "No Media Found",
                     description = "Your gallery is completely empty. Take some photos to get started!",
@@ -204,13 +210,14 @@ fun GalleryScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(
-                        count = state.mediaList.size,
-                        contentType = { index -> if (state.mediaList[index].isVideo) "video" else "photo" },
-                        key = { index -> state.mediaList[index].id }) { index ->
+                        count = state.displayedMediaList.size,
+                        contentType = { index -> if (state.displayedMediaList[index].isVideo) "video" else "photo" },
+                        key = { index -> state.displayedMediaList[index].id }) { index ->
+                        val mediaItem = state.displayedMediaList[index]
                         MediaItemCard(
-                            media = state.mediaList[index],
-                            onClick = {
-                                viewModel.setEvent(GalleryEvent.MediaClicked(state.mediaList[index].id))
+                            media = state.displayedMediaList[index],
+                            onClick = remember(mediaItem.id) {
+                                { viewModel.setEvent(GalleryEvent.MediaClicked(mediaItem.id)) }
                             },
                             modifier = Modifier.animateItem(),
                             sharedTransitionScope = sharedTransitionScope,
@@ -222,12 +229,16 @@ fun GalleryScreen(
 
             }
         }
+        val shouldShowBar by remember(state.displayedMediaList.isNotEmpty(), isScrollingUp) {
+            derivedStateOf { state.displayedMediaList.isNotEmpty() && isScrollingUp }
+        }
+
         val barOffset by animateDpAsState(
-            targetValue = if (state.mediaList.isNotEmpty() && isScrollingUp) 0.dp else 150.dp,
+            targetValue = if (shouldShowBar) 0.dp else 150.dp,
             label = "barOffset"
         )
         val barAlpha by animateFloatAsState(
-            targetValue = if (state.mediaList.isNotEmpty() && isScrollingUp) 1f else 0f,
+            targetValue = if (shouldShowBar) 1f else 0f,
             label = "barAlpha"
         )
 //        AnimatedVisibility(
@@ -247,9 +258,14 @@ fun GalleryScreen(
 //                    )
 //                ) {
             FloatingGalleryBar(
-                selectedTab = selectedTab,
+                selectedTab = state.selectedTab,
+                onClick = { coroutineScope.launch{ gridState.animateScrollToItem(0) }},
                 onTabSelected = { tab ->
-                    selectedTab = tab
+                   viewModel.setEvent(GalleryEvent.onTabSelected(tab))
+                    coroutineScope.launch {
+                        delay(500)
+                        gridState.animateScrollToItem(0)
+                    }
                 }, modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(
