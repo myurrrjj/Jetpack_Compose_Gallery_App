@@ -2,7 +2,7 @@ package com.example.jetpackcomposegalleryapp.di
 
 import android.content.ContentResolver
 import android.content.Context
-import androidx.compose.runtime.MovableContent
+import com.example.jetpackcomposegalleryapp.data.local.dao.FavouriteDao
 import com.example.jetpackcomposegalleryapp.data.repository.MediaStoreRepositoryImpl
 import com.example.jetpackcomposegalleryapp.domain.repository.MediaRepository
 import dagger.Module
@@ -25,8 +25,8 @@ object MediaModule {
 
     @Provides
     @Singleton
-    fun provideMediaRepository(contentResolver: ContentResolver): MediaRepository {
-        return MediaStoreRepositoryImpl(contentResolver)
+    fun provideMediaRepository(contentResolver: ContentResolver,favouriteDao: FavouriteDao): MediaRepository {
+        return MediaStoreRepositoryImpl(contentResolver, favouriteDao = favouriteDao)
 
     }
 }

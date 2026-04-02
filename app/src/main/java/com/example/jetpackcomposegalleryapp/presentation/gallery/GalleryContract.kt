@@ -21,8 +21,8 @@ data class GalleryState(
     val albums: ImmutableList<Album> = persistentListOf(),
     val error: String? = null,
     val hasPermission: Boolean = false,
-    val selectedTab: GalleryTab = GalleryTab.ALL
-
+    val selectedTab: GalleryTab = GalleryTab.ALL,
+    val favoriteMediaIds: Set<Long> = emptySet(),
 
 ) : ViewState
 
@@ -31,7 +31,7 @@ sealed class GalleryEvent : ViewEvent {
     data class PermissionResult(val isGranted: Boolean) : GalleryEvent()
     data class MediaClicked(val mediaId: Long) : GalleryEvent()
     data class onTabSelected(val tab: GalleryTab) : GalleryEvent()
-
+    data class ToggleFavorite(val media: MediaAsset, val isFavorite: Boolean) : GalleryEvent()
 }
 
 sealed class GalleryEffect : ViewSideEffect {

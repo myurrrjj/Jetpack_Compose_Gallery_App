@@ -3,14 +3,20 @@ package com.example.jetpackcomposegalleryapp.data.repository
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.provider.MediaStore
+import com.example.jetpackcomposegalleryapp.data.local.dao.FavouriteDao
+import com.example.jetpackcomposegalleryapp.data.local.entity.toFavoriteEntity
 import com.example.jetpackcomposegalleryapp.domain.model.MediaAsset
 import com.example.jetpackcomposegalleryapp.domain.repository.MediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
 
-class MediaStoreRepositoryImpl(private val contentResolver: ContentResolver) : MediaRepository {
+class MediaStoreRepositoryImpl @Inject constructor(
+    private val contentResolver: ContentResolver, private val favouriteDao: FavouriteDao
+) : MediaRepository {
     override fun getAllMedia(): Flow<List<MediaAsset>> = flow {
         val mediaList = mutableListOf<MediaAsset>()
         val collection = MediaStore.Files.getContentUri("external")
@@ -22,7 +28,8 @@ class MediaStoreRepositoryImpl(private val contentResolver: ContentResolver) : M
             MediaStore.Files.FileColumns.SIZE,
             MediaStore.MediaColumns.WIDTH,
             MediaStore.MediaColumns.HEIGHT,
-            MediaStore.Video.VideoColumns.DURATION, MediaStore.MediaColumns.BUCKET_DISPLAY_NAME
+            MediaStore.Video.VideoColumns.DURATION,
+            MediaStore.MediaColumns.BUCKET_DISPLAY_NAME
         )
         val selection =
             "${MediaStore.Files.FileColumns.MEDIA_TYPE} = ? OR ${MediaStore.Files.FileColumns.MEDIA_TYPE} = ?"
@@ -86,7 +93,7 @@ class MediaStoreRepositoryImpl(private val contentResolver: ContentResolver) : M
                             duration = duration,
                             folderName = folderName
 
-                            )
+                        )
                     )
                 }
 
@@ -94,5 +101,21 @@ class MediaStoreRepositoryImpl(private val contentResolver: ContentResolver) : M
 
         emit(mediaList)
     }.flowOn(Dispatchers.IO)
+
+    override fun getFavorites(): Flow<List<MediaAsset>> {
+        return favouriteDao.getFavourites().map { entities ->
+            entities.map { it.toDomainModel() }
+        }
+    }
+
+    override suspend fun toggleFavourite(
+        media: MediaAsset, isFavourite: Boolean
+    ) {
+        if (isFavourite) {
+            favouriteDao.insertFavourite(media.toFavoriteEntity())
+        } else {
+            favouriteDao.removeFavourite(media.id)
+        }
+    }
 
 }

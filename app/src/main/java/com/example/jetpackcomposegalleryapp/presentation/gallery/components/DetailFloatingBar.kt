@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Share
@@ -33,7 +34,7 @@ enum class DetailAction(val icon: ImageVector, val contentDescription: String) {
 }
 
 @Composable
-fun DetailFloatingBar(onActionClick: (DetailAction) -> Unit, modifier: Modifier = Modifier) {
+fun DetailFloatingBar(isFavorite: Boolean, onActionClick: (DetailAction) -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .shadow(
@@ -56,10 +57,21 @@ fun DetailFloatingBar(onActionClick: (DetailAction) -> Unit, modifier: Modifier 
                     )
                     .padding(12.dp)
             ) {
+                val displayIcon = if (action == DetailAction.FAVOURITE && isFavorite) {
+                    Icons.Rounded.Favorite
+                } else {
+                    action.icon
+                }
+
+                val displayTint = if (action == DetailAction.FAVOURITE && isFavorite) {
+                    Color.Red
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
                 Icon(
-                    imageVector = action.icon,
+                    imageVector = displayIcon,
                     contentDescription = action.contentDescription,
-                    tint = MaterialTheme.colorScheme.onSurface
+                    tint = displayTint
                 )
             }
         }

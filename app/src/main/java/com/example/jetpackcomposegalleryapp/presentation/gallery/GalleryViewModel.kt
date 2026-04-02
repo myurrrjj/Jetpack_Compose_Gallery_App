@@ -25,9 +25,14 @@ class GalleryViewModel @Inject constructor(
             is GalleryEvent.PermissionResult -> handlePermission(event.isGranted)
             is GalleryEvent.MediaClicked -> navigateToDetail(event.mediaId)
             is GalleryEvent.onTabSelected -> handleTabSelection(event.tab)
-
+            is GalleryEvent.ToggleFavorite -> {
+                viewModelScope.launch {
+                    mediaRepository.toggleFavourite(event.media, event.isFavorite)
+                }
+            }
         }
     }
+
 
     private fun handleTabSelection(tab: GalleryTab) {
         if (uiState.value.selectedTab == tab) return
@@ -85,4 +90,16 @@ class GalleryViewModel @Inject constructor(
     private fun navigateToDetail(mediaId: Long) {
         setEffect { GalleryEffect.NavigateToDetail(mediaId) }
     }
+    init {
+        observeFavorites()
+    }
+
+    private fun observeFavorites() {
+        viewModelScope.launch {
+            mediaRepository.getFavorites().collect { favorites ->
+                setState { copy(favoriteMediaIds = favorites.map { it.id }.toSet()) }
+            }
+        }
+    }
+
 }

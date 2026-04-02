@@ -51,9 +51,7 @@ fun DetailScreen(
         state.displayedMediaList.indexOfFirst { it.id == initialMediaId }.coerceAtLeast(0)
     }
     val pagerState = rememberPagerState(
-        initialPage = initialIndex,
-        pageCount = { state.displayedMediaList.size }
-    )
+        initialPage = initialIndex, pageCount = { state.displayedMediaList.size })
 
     val currentMedia = remember(pagerState.currentPage, state.masterMediaList) {
         if (state.masterMediaList.isNotEmpty()) {
@@ -61,6 +59,9 @@ fun DetailScreen(
         } else {
             null
         }
+    }
+    val isFavorite = remember(currentMedia, state.favoriteMediaIds) {
+        currentMedia?.id?.let { state.favoriteMediaIds.contains(it) } ?: false
     }
 
     val deleteLauncher =
@@ -76,21 +77,18 @@ fun DetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-    )
-    {
+    ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
             pageSpacing = 16.dp,
             key = { page -> state.displayedMediaList[page].id },
-            beyondViewportPageCount = 1
+//            beyondViewportPageCount = 1
         ) { page ->
             val media = state.displayedMediaList[page]
             with(sharedTransitionScope) {
                 val imageRequest = remember(media.uriString) {
-                    ImageRequest.Builder(context)
-                        .data(media.uriString)
-                        .build()
+                    ImageRequest.Builder(context).data(media.uriString).build()
                 }
                 AsyncImage(
                     model = imageRequest,
@@ -108,7 +106,7 @@ fun DetailScreen(
         }
         with(sharedTransitionScope) {
             DetailFloatingBar(
-                onActionClick = { action ->
+                isFavorite = isFavorite, onActionClick = { action ->
                     currentMedia?.let { media ->
                         when (action) {
                             DetailAction.SHARE -> {
@@ -119,7 +117,10 @@ fun DetailScreen(
                                 MediaIntents.editMedia(context, media.uriString, media.mimeType)
                             }
 
-                            DetailAction.FAVOURITE -> {}
+                            DetailAction.FAVOURITE -> {
+                                viewModel.setEvent(GalleryEvent.ToggleFavorite(media, !isFavorite))
+                            }
+
                             DetailAction.INFO -> {}
                             DetailAction.DELETE -> {
                                 val uri = media.uriString.toUri()
@@ -142,9 +143,7 @@ fun DetailScreen(
                                     }
                                 } catch (e: SecurityException) {
                                     Toast.makeText(
-                                        context,
-                                        "Cannot delete this file",
-                                        Toast.LENGTH_SHORT
+                                        context, "Cannot delete this file", Toast.LENGTH_SHORT
                                     ).show()
                                 }
                             }
@@ -152,8 +151,7 @@ fun DetailScreen(
                     }
 
 
-                },
-                modifier = Modifier
+                }, modifier = Modifier
                     .align(
                         Alignment.BottomCenter
                     )
@@ -164,7 +162,8 @@ fun DetailScreen(
                     .zIndex(1f)
                     .sharedElement(
                         sharedContentState = rememberSharedContentState(key = "floating_navigation_bar"),
-                        animatedVisibilityScope = animatedVisibilityScope, zIndexInOverlay = 1f
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        zIndexInOverlay = 1f
                     )
             )
         }
