@@ -2,6 +2,7 @@ package com.example.jetpackcomposegalleryapp.presentation.gallery
 
 import androidx.lifecycle.viewModelScope
 import com.example.jetpackcomposegalleryapp.core.presentation.mvi.BaseViewModel
+import com.example.jetpackcomposegalleryapp.domain.model.MediaAsset
 import com.example.jetpackcomposegalleryapp.domain.repository.MediaRepository
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.GalleryTab
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,11 +26,40 @@ class GalleryViewModel @Inject constructor(
             is GalleryEvent.PermissionResult -> handlePermission(event.isGranted)
             is GalleryEvent.MediaClicked -> navigateToDetail(event.mediaId)
             is GalleryEvent.onTabSelected -> handleTabSelection(event.tab)
-            is GalleryEvent.ToggleFavorite -> {
+            is GalleryEvent.ToggleFavorite ->
                 viewModelScope.launch {
                     mediaRepository.toggleFavourite(event.media, event.isFavorite)
                 }
+
+
+            is GalleryEvent.OpenInfoSheet -> fetchMediaDetails(event.media)
+
+            is GalleryEvent.CloseInfoSheet -> {
+                setState { copy(infoSheetState = InfoSheetState.Closed) }
             }
+
+
+        }
+    }
+
+    private fun fetchMediaDetails(media: MediaAsset) {
+        setState {
+            copy(infoSheetState = InfoSheetState.Loading(media))
+        }
+        viewModelScope.launch {
+            try {
+                val details = mediaRepository.getMediaDetails(media.uriString, media.isVideo)
+                setState {
+                    copy(infoSheetState = InfoSheetState.Success(media, details))
+
+                }
+            }catch (e: Exception){
+                setState {
+                    copy(infoSheetState = InfoSheetState.Error(media,e.message?:"Unknown Error"))
+
+                }
+            }
+
         }
     }
 
@@ -39,7 +69,9 @@ class GalleryViewModel @Inject constructor(
 
         val filteredList = when (tab) {
             GalleryTab.ALL -> uiState.value.masterMediaList
-            GalleryTab.VIDEOS -> uiState.value.masterMediaList.filter { it.isVideo }.toImmutableList()
+            GalleryTab.VIDEOS -> uiState.value.masterMediaList.filter { it.isVideo }
+                .toImmutableList()
+
             GalleryTab.ALBUMS -> persistentListOf()
         }
 
@@ -76,13 +108,20 @@ class GalleryViewModel @Inject constructor(
                     val immutableMedia = media.toImmutableList()
                     val processedAlbums = immutableMedia
                         .groupBy { it.folderName }
-                        .map { (folderName,items)->
-                            Album(name =folderName,items.size,items.first())
+                        .map { (folderName, items) ->
+                            Album(name = folderName, items.size, items.first())
                         }
                         .sortedBy { it.name }
                         .toImmutableList()
 
-                    setState { copy(isLoading = false, masterMediaList = immutableMedia,displayedMediaList=immutableMedia,albums = processedAlbums) }
+                    setState {
+                        copy(
+                            isLoading = false,
+                            masterMediaList = immutableMedia,
+                            displayedMediaList = immutableMedia,
+                            albums = processedAlbums
+                        )
+                    }
                 }
         }
     }
@@ -90,6 +129,7 @@ class GalleryViewModel @Inject constructor(
     private fun navigateToDetail(mediaId: Long) {
         setEffect { GalleryEffect.NavigateToDetail(mediaId) }
     }
+
     init {
         observeFavorites()
     }

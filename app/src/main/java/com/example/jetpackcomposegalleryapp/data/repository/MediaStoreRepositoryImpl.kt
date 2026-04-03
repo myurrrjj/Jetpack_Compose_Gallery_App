@@ -2,9 +2,13 @@ package com.example.jetpackcomposegalleryapp.data.repository
 
 import android.content.ContentResolver
 import android.content.ContentUris
+import android.media.MediaMetadataRetriever
 import android.provider.MediaStore
+import androidx.core.net.toUri
+import androidx.exifinterface.media.ExifInterface
 import com.example.jetpackcomposegalleryapp.data.local.dao.FavouriteDao
 import com.example.jetpackcomposegalleryapp.data.local.entity.toFavoriteEntity
+import com.example.jetpackcomposegalleryapp.domain.model.DetailedMediaInfo
 import com.example.jetpackcomposegalleryapp.domain.model.MediaAsset
 import com.example.jetpackcomposegalleryapp.domain.repository.MediaRepository
 import kotlinx.coroutines.Dispatchers
@@ -12,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class MediaStoreRepositoryImpl @Inject constructor(
@@ -116,6 +121,83 @@ class MediaStoreRepositoryImpl @Inject constructor(
         } else {
             favouriteDao.removeFavourite(media.id)
         }
+    }
+
+    override suspend fun getMediaDetails(
+        uriString: String,
+        isVideo: Boolean
+    ): DetailedMediaInfo = withContext(Dispatchers.IO) {
+        val uri = uriString.toUri()
+        var info = DetailedMediaInfo()
+        try {
+            if (isVideo) {
+                val retriever = MediaMetadataRetriever()
+                contentResolver.openFileDescriptor(uri, "r")?.use { pfd ->
+                    retriever.setDataSource(pfd.fileDescriptor)
+                    val width =
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+                            ?.toFloatOrNull()
+                    val height =
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+                            ?.toFloatOrNull()
+                    val frameRate =
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)
+                            ?.toFloatOrNull()
+
+                    val bitrate =
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+                            ?.toFloatOrNull()
+                    val durationMs =
+                        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                            ?.toLongOrNull()
+
+//                    val format = retriever.extractMetadata(MediaMetadataRetriever.)
+                    val durationFormatted = durationMs?.let {
+                        val seconds = (it / 1000) % 60
+                        val minutes = (it / (1000 * 60)) % 60
+                        String.format("%02d:%02d", minutes, seconds)
+
+                    }
+                    info = info.copy(
+                        resolution = if (width != null && height != null) "${width}x${height}" else null,
+                        frameRate = frameRate,
+                        bitrate = bitrate?.let { "${it / 1000} kbps" },
+                        durationFormatted = durationFormatted
+                    )
+
+                }
+                retriever.release()
+
+            } else {
+                contentResolver.openInputStream(uri)?.use { inputStream ->
+                    val exif = ExifInterface(inputStream)
+
+                    val width = exif.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0)
+                    val height = exif.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0)
+                    val exposureNum = exif.getAttributeDouble(ExifInterface.TAG_EXPOSURE_TIME, 0.0)
+                    info = info.copy(
+                        resolution = if (width > 0 && height > 0) "${width}x${height}" else null,
+                        megapixelCount = if (width > 0 && height > 0) (width * height) / 1000000f else null,
+                        cameraMake = exif.getAttribute(ExifInterface.TAG_MAKE),
+                        cameraModel = exif.getAttribute(ExifInterface.TAG_MODEL),
+                        aperture = exif.getAttribute(ExifInterface.TAG_F_NUMBER)?.let { "f/$it" },
+                        exposureTime = if (exposureNum > 0) "1/${(1 / exposureNum).toInt()}s" else null,
+                        iso = exif.getAttribute(ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY)
+                            ?.let { "ISO $it" },
+                        focalLength = exif.getAttributeDouble(ExifInterface.TAG_FOCAL_LENGTH, 0.0)
+                            .let {
+                                if (it > 0) "${it}mm" else null
+                            }
+                    )
+                }
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+
+        return@withContext info
     }
 
 }
