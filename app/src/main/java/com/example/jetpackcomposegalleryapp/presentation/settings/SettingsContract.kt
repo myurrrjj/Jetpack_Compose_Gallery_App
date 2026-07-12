@@ -5,7 +5,6 @@ import com.example.jetpackcomposegalleryapp.core.presentation.mvi.ViewSideEffect
 import com.example.jetpackcomposegalleryapp.core.presentation.mvi.ViewState
 import com.example.jetpackcomposegalleryapp.domain.model.AppSettings
 import com.example.jetpackcomposegalleryapp.domain.model.GalleryViewMode
-import com.example.jetpackcomposegalleryapp.presentation.gallery.GalleryEvent
 
 data class SettingsState(
     val isLoading: Boolean = true,

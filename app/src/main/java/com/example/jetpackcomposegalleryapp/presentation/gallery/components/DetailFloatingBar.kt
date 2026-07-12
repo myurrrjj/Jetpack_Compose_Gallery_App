@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ContentCopy
@@ -45,6 +46,7 @@ fun DetailFloatingBar(
 ) {
     Row(
         modifier = modifier
+            .widthIn(max = 420.dp)
             .shadow(
                 elevation = 24.dp,
                 shape = CircleShape,
@@ -62,7 +64,7 @@ fun DetailFloatingBar(
                     .bouncyClick(
                         onClick = { onActionClick(action) }
                     )
-                    .padding(12.dp)
+                    .padding(10.dp)
             ) {
                 val displayIcon = if (action == DetailAction.FAVOURITE && isFavorite) {
                     Icons.Rounded.Favorite

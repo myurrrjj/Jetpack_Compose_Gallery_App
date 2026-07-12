@@ -6,11 +6,13 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.jetpackcomposegalleryapp.data.local.dao.FaceDao
 import com.example.jetpackcomposegalleryapp.data.local.dao.FavouriteDao
+import com.example.jetpackcomposegalleryapp.data.local.dao.SearchDao
 import com.example.jetpackcomposegalleryapp.data.local.entity.FaceClusterEntity
 import com.example.jetpackcomposegalleryapp.data.local.entity.FaceEmbeddingEntity
 import com.example.jetpackcomposegalleryapp.data.local.entity.FavouriteMediaEntity
 import com.example.jetpackcomposegalleryapp.data.local.entity.MediaPersonEntity
 import com.example.jetpackcomposegalleryapp.data.local.entity.MediaProcessingStatusEntity
+import com.example.jetpackcomposegalleryapp.data.local.entity.SearchIndexEntity
 
 @Database(
     entities = [
@@ -18,14 +20,16 @@ import com.example.jetpackcomposegalleryapp.data.local.entity.MediaProcessingSta
         FaceEmbeddingEntity::class,
         FaceClusterEntity::class,
         MediaPersonEntity::class,
-        MediaProcessingStatusEntity::class
+        MediaProcessingStatusEntity::class,
+        SearchIndexEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class GalleryDatabase : RoomDatabase() {
     abstract val favouriteDao: FavouriteDao
     abstract val faceDao : FaceDao
+    abstract val searchDao: SearchDao
 
 
     companion object {

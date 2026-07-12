@@ -29,8 +29,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.example.jetpackcomposegalleryapp.core.util.MediaIntents
 import com.example.jetpackcomposegalleryapp.presentation.gallery.DetailScreen
-import com.example.jetpackcomposegalleryapp.presentation.gallery.GalleryEffect
-import com.example.jetpackcomposegalleryapp.presentation.gallery.GalleryEvent
+import com.example.jetpackcomposegalleryapp.presentation.gallery.contract.GalleryEffect
+import com.example.jetpackcomposegalleryapp.presentation.gallery.contract.GalleryEvent
 import com.example.jetpackcomposegalleryapp.presentation.gallery.GalleryScreen
 import com.example.jetpackcomposegalleryapp.presentation.gallery.GalleryViewModel
 import com.example.jetpackcomposegalleryapp.presentation.navigation.Route.Detail
@@ -164,6 +164,10 @@ fun GalleryNavGraph() {
             composable<Settings> {
                 SettingsScreen(
                     onNavigateBack = { navController.popBackStack() })
+            }
+
+            composable<Route.Search>{
+
             }
         }
     }

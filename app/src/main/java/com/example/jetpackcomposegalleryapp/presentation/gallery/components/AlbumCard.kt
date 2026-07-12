@@ -1,6 +1,5 @@
 package com.example.jetpackcomposegalleryapp.presentation.gallery.components
 
-import android.text.Layout
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
@@ -22,13 +21,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.jetpackcomposegalleryapp.core.presentation.components.bouncyClick
-import com.example.jetpackcomposegalleryapp.presentation.gallery.Album
+import com.example.jetpackcomposegalleryapp.presentation.gallery.model.Album
 
 @Composable
 fun SharedTransitionScope.AlbumCard(

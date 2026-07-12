@@ -1,6 +1,7 @@
 package com.example.jetpackcomposegalleryapp.presentation.gallery.components
 
 import android.net.Uri
+import android.view.MotionEvent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -8,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.davemorrissey.labs.subscaleview.ImageSource
@@ -19,7 +21,8 @@ fun ZoomableImage(
     uriString: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    onTap: (() -> Unit)? = null
+    // FIX: now carries the tap offset so the caller can tell which screen half was tapped
+    onTap: ((Offset) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val uri = remember(uriString) { uriString.toUri() }
@@ -36,8 +39,19 @@ fun ZoomableImage(
                 orientation = SubsamplingScaleImageView.ORIENTATION_USE_EXIF
                 setPanLimit(SubsamplingScaleImageView.PAN_LIMIT_INSIDE)
                 isQuickScaleEnabled = true
+
+                // FIX: setOnClickListener alone gives no coordinates, so this listener just
+                // FIX: remembers where the finger went down, returning false so pan/pinch/double-tap
+                // FIX: zoom inside SubsamplingScaleImageView still work exactly as before
+                var lastTapOffset = Offset.Zero
+                setOnTouchListener { _, event ->
+                    if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                        lastTapOffset = Offset(event.x, event.y)
+                    }
+                    false
+                }
                 setOnClickListener {
-                    currentOnTap?.invoke()
+                    currentOnTap?.invoke(lastTapOffset)
                 }
             }
         },

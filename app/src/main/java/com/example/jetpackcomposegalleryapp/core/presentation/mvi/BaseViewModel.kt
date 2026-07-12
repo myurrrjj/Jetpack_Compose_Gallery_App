@@ -2,7 +2,6 @@ package com.example.jetpackcomposegalleryapp.core.presentation.mvi
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.jetpackcomposegalleryapp.presentation.gallery.OthersSelection
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -11,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import okhttp3.internal.notify
 
 abstract class BaseViewModel<Event : ViewEvent, State : ViewState, Effect : ViewSideEffect> :
     ViewModel() {

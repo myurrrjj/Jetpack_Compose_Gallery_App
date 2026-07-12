@@ -14,7 +14,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,19 +23,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -57,7 +51,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -66,17 +59,22 @@ import com.example.jetpackcomposegalleryapp.core.presentation.components.bouncyC
 import com.example.jetpackcomposegalleryapp.core.util.rememberScrollingUp
 import com.example.jetpackcomposegalleryapp.domain.model.GalleryViewMode
 import com.example.jetpackcomposegalleryapp.domain.model.PersonCluster
+import com.example.jetpackcomposegalleryapp.presentation.gallery.contract.GalleryEvent
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.AlbumCard
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.AlbumDetailView
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.ContextualSelectionBar
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.DetailAction
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.DetailFloatingBar
+import com.example.jetpackcomposegalleryapp.presentation.gallery.components.EmptyStateView
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.FloatingGalleryBar
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.GalleryTopBar
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.MediaItemCard
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.PersonClusterCard
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.PersonDetailView
 import com.example.jetpackcomposegalleryapp.presentation.gallery.components.galleryZoomGesture
+import com.example.jetpackcomposegalleryapp.presentation.gallery.model.Album
+import com.example.jetpackcomposegalleryapp.presentation.gallery.model.GalleryTab
+import com.example.jetpackcomposegalleryapp.presentation.gallery.model.OthersSelection
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -84,65 +82,7 @@ data class ScreenTarget(
     val album: Album?, val person: PersonCluster?
 )
 
-@Composable
-fun EmptyStateView(
-    title: String,
-    description: String,
-    buttonText: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Lock,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
-        Spacer(Modifier.height(32.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(16.dp))
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Spacer(Modifier.height(48.dp))
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(100))
-                .background(MaterialTheme.colorScheme.primary)
-                .bouncyClick(onClick = onClick)
-                .padding(horizontal = 32.dp, vertical = 16.dp)
-        ) {
-            Text(
-                text = buttonText,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        }
-    }
-}
+
 
 @Suppress("EffectKeys")
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -158,35 +98,39 @@ fun GalleryScreen(
     val isScrollingUp = rememberScrollingUp(gridState)
     val coroutineScope = rememberCoroutineScope()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val contentState = state.contentState
+    val configState = state.configState
+    val infoSheetState = state.infoSheetState
+    val interactionState = state.interactionState
 
-    BackHandler(enabled = state.selectionMode || state.openedAlbum != null || state.openedPersonCluster != null) {
-        if (state.selectionMode) {
+    BackHandler(enabled = interactionState.selectionMode || interactionState.openedAlbum != null || interactionState.openedPersonCluster != null) {
+        if (interactionState.selectionMode) {
             viewModel.setEvent(GalleryEvent.ExitSelectionMode)
-        } else if (state.openedAlbum != null) {
+        } else if (interactionState.openedAlbum != null) {
             viewModel.setEvent(GalleryEvent.CloseAlbum)
-        } else if (state.openedPersonCluster != null) {
+        } else if (interactionState.openedPersonCluster != null) {
             viewModel.setEvent(GalleryEvent.ClosePerson)
         }
     }
 
     val scrollBehaviour = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-    val mediaCount = when (state.selectedTab) {
-        GalleryTab.ALBUMS -> state.albums.size
-        else -> state.displayedMediaList.size
+    val mediaCount = when (interactionState.selectedTab) {
+        GalleryTab.ALBUMS -> contentState.albums.size
+        else -> contentState.displayedMediaList.size
     }
 
     LaunchedEffect(Unit) {
-        if (state.masterMediaList.isEmpty()) {
+        if (contentState.masterMediaList.isEmpty()) {
             viewModel.setEvent(GalleryEvent.LoadMedia)
         }
     }
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehaviour.nestedScrollConnection), topBar = {
-            if (state.selectionMode) {
+            if (interactionState.selectionMode) {
                 ContextualSelectionBar(
-                    selectedCount = state.selectedMediaIds.size,
-                    totalDisplayedCount = state.displayedMediaList.size,
+                    selectedCount = interactionState.selectedMediaIds.size,
+                    totalDisplayedCount = contentState.displayedMediaList.size,
                     onCloseClick = { viewModel.setEvent(GalleryEvent.ExitSelectionMode) },
                     onSelectAllClick = { viewModel.setEvent(GalleryEvent.SelectAll) },
                     onClearSelectionClick = { viewModel.setEvent(GalleryEvent.ClearSelection) },
@@ -208,7 +152,7 @@ fun GalleryScreen(
                 .padding(top = innerPadding.calculateTopPadding())
         ) {
             AnimatedContent(
-                targetState = ScreenTarget(state.openedAlbum, state.openedPersonCluster),
+                targetState = ScreenTarget(interactionState.openedAlbum, interactionState.openedPersonCluster),
                 transitionSpec = {
                     fadeIn() togetherWith fadeOut()
                 },
@@ -219,12 +163,12 @@ fun GalleryScreen(
                     with(sharedTransitionScope) {
                         AlbumDetailView(
                             album = target.album,
-                            selectionMode = state.selectionMode,
-                            mediaList = state.displayedMediaList,
+                            selectionMode = interactionState.selectionMode,
+                            mediaList = contentState.displayedMediaList,
                             onBackClick = { viewModel.setEvent(GalleryEvent.CloseAlbum) },
                             onMediaClick = { id -> viewModel.setEvent(GalleryEvent.MediaClicked(id)) },
                             modifier = Modifier.padding(top = 8.dp),
-                            selectedMediaIds = state.selectedMediaIds,
+                            selectedMediaIds = interactionState.selectedMediaIds,
                             onToggleSelection = { mediaId ->
                                 viewModel.setEvent(GalleryEvent.ToggleMediaSelection(mediaId))
                             },
@@ -239,15 +183,15 @@ fun GalleryScreen(
                     with(sharedTransitionScope) {
                         PersonDetailView(
                             cluster = target.person,
-                            selectionMode = state.selectionMode,
-                            mediaList = state.displayedMediaList,
+                            selectionMode = interactionState.selectionMode,
+                            mediaList = contentState.displayedMediaList,
                             onBackClick = { viewModel.setEvent(GalleryEvent.ClosePerson) },
                             onUpdateName = { id, name ->
                                 viewModel.setEvent(GalleryEvent.UpdatePersonName(id, name))
                             },
                             onMediaClick = { id -> viewModel.setEvent(GalleryEvent.MediaClicked(id)) },
                             modifier = Modifier.padding(top = 8.dp),
-                            selectedMediaIds = state.selectedMediaIds,
+                            selectedMediaIds = interactionState.selectedMediaIds,
                             onToggleSelection = { mediaId ->
                                 viewModel.setEvent(GalleryEvent.ToggleMediaSelection(mediaId))
                             },
@@ -259,20 +203,20 @@ fun GalleryScreen(
                 } else {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         AnimatedContent(
-                            targetState = state.selectedTab, transitionSpec = {
+                            targetState = interactionState.selectedTab, transitionSpec = {
                                 fadeIn() togetherWith fadeOut()
 
                             }, label = "TabContent"
                         ) { tab ->
                             when {
-                                state.isLoading -> {
+                                configState.isLoading -> {
                                     CircularProgressIndicator(
                                         modifier = Modifier.align(Alignment.Center),
                                         color = MaterialTheme.colorScheme.primary
                                     )
                                 }
 
-                                !state.hasPermission -> {
+                                !configState.hasPermission -> {
                                     EmptyStateView(
                                         title = "Access Required",
                                         description = "To display your beautiful memories, we need access to your device's photos and videos.",
@@ -281,7 +225,7 @@ fun GalleryScreen(
                                     )
                                 }
 
-                                (tab == GalleryTab.ALBUMS && state.albums.isEmpty()) || (tab != GalleryTab.ALBUMS && tab != GalleryTab.OTHERS && state.displayedMediaList.isEmpty()) -> {
+                                (tab == GalleryTab.ALBUMS && contentState.albums.isEmpty()) || (tab != GalleryTab.ALBUMS && tab != GalleryTab.OTHERS && contentState.displayedMediaList.isEmpty()) -> {
                                     EmptyStateView(
                                         title = "No Content Found",
                                         description = "Your gallery section is empty. Take some photos to get started!",
@@ -292,7 +236,7 @@ fun GalleryScreen(
                                 else -> {
                                     LazyVerticalGrid(
                                         state = gridState,
-                                        columns = GridCells.Adaptive(minSize = if (tab == GalleryTab.OTHERS && state.othersSelection == OthersSelection.PEOPLE) 140.dp else if (tab == GalleryTab.ALBUMS) 150.dp else state.currentViewMode.minCellSizeDp.dp),
+                                        columns = GridCells.Adaptive(minSize = if (tab == GalleryTab.OTHERS && interactionState.othersSelection == OthersSelection.PEOPLE) 140.dp else if (tab == GalleryTab.ALBUMS) 150.dp else configState.currentViewMode.minCellSizeDp.dp),
                                         contentPadding = PaddingValues(
                                             top = 8.dp,
                                             start = 2.dp,
@@ -305,7 +249,7 @@ fun GalleryScreen(
                                         modifier = Modifier
                                             .fillMaxSize()
                                             .galleryZoomGesture(
-                                                currentMode = state.currentViewMode,
+                                                currentMode = configState.currentViewMode,
                                                 onViewModeChanged = { newMode ->
                                                     viewModel.setEvent(
                                                         GalleryEvent.ChangeViewMode(
@@ -333,7 +277,7 @@ fun GalleryScreen(
                                                         ) {
                                                             OthersSelection.entries.forEach { selection ->
                                                                 val isSelected =
-                                                                    state.othersSelection == selection
+                                                                    interactionState.othersSelection == selection
                                                                 val containerColor by animateColorAsState(
                                                                     targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                                                                     label = "SegmentContainerColor"
@@ -375,11 +319,11 @@ fun GalleryScreen(
                                             }
                                         }
                                         val isOthersEmpty =
-                                            tab == GalleryTab.OTHERS && ((state.othersSelection == OthersSelection.PEOPLE && state.peopleClusters.isEmpty()) || (state.othersSelection == OthersSelection.FAVOURITES && state.displayedMediaList.isEmpty()))
+                                            tab == GalleryTab.OTHERS && ((interactionState.othersSelection == OthersSelection.PEOPLE && contentState.peopleClusters.isEmpty()) || (interactionState.othersSelection == OthersSelection.FAVOURITES && contentState.displayedMediaList.isEmpty()))
                                         if (isOthersEmpty) {
                                             item(span = { GridItemSpan(maxLineSpan) }) {
                                                 val isPeopleTab =
-                                                    state.othersSelection == OthersSelection.PEOPLE
+                                                    interactionState.othersSelection == OthersSelection.PEOPLE
                                                 EmptyStateView(
                                                     title = if (isPeopleTab) "Find People" else "No Favourites",
                                                     description = if (isPeopleTab) "Plug in your device to scan your gallery for faces." else "No items found.",
@@ -396,18 +340,18 @@ fun GalleryScreen(
                                         } else {
                                             if (tab == GalleryTab.ALBUMS) {
                                                 items(
-                                                    count = state.albums.size, key = { index ->
-                                                        state.albums[index].name ?: "Unknown"
+                                                    count = contentState.albums.size, key = { index ->
+                                                        contentState.albums[index].name ?: "Unknown"
                                                     }) { index ->
                                                     with(sharedTransitionScope) {
                                                         AlbumCard(
-                                                            album = state.albums[index],
+                                                            album = contentState.albums[index],
                                                             albumAnimatedVisibilityScope = galleryToDetailScope,
                                                             tabAnimatedVisibilityScope = animatedVisibilityScope,
                                                             onClick = {
                                                                 viewModel.setEvent(
                                                                     GalleryEvent.OpenAlbum(
-                                                                        state.albums[index]
+                                                                        contentState.albums[index]
                                                                     )
                                                                 )
                                                             },
@@ -415,13 +359,13 @@ fun GalleryScreen(
                                                         )
                                                     }
                                                 }
-                                            } else if (tab == GalleryTab.OTHERS && state.othersSelection == OthersSelection.PEOPLE) {
+                                            } else if (tab == GalleryTab.OTHERS && interactionState.othersSelection == OthersSelection.PEOPLE) {
                                                 items(
-                                                    count = state.peopleClusters.size,
-                                                    key = { index -> state.peopleClusters[index].id }) { index ->
-                                                    val cluster = state.peopleClusters[index]
+                                                    count = contentState.peopleClusters.size,
+                                                    key = { index -> contentState.peopleClusters[index].id }) { index ->
+                                                    val cluster = contentState.peopleClusters[index]
                                                     val coverMedia =
-                                                        state.masterMediaList.find { it.id == cluster.coverMediaId }
+                                                        contentState.masterMediaList.find { it.id == cluster.coverMediaId }
                                                     with(sharedTransitionScope) {
                                                         PersonClusterCard(
                                                             cluster = cluster,
@@ -440,7 +384,7 @@ fun GalleryScreen(
                                                     }
                                                 }
                                             } else {
-                                                state.groupedMedia.forEach { (groupKey, mediaItems) ->
+                                                contentState.groupedMedia.forEach { (groupKey, mediaItems) ->
                                                     if (mediaItems.isNotEmpty()) {
                                                         item(
                                                             key = "header_$groupKey",
@@ -448,7 +392,7 @@ fun GalleryScreen(
                                                             contentType = "contentType1"
                                                         ) {
                                                             Text(
-                                                                text = state.currentViewMode.formatHeader(
+                                                                text = configState.currentViewMode.formatHeader(
                                                                     mediaItems.first().dateAdded
                                                                 ),
                                                                 style = MaterialTheme.typography.titleMedium,
@@ -468,10 +412,10 @@ fun GalleryScreen(
                                                             key = { index -> mediaItems[index].id }) { index ->
                                                             val mediaItem = mediaItems[index]
                                                             val isSelected =
-                                                                state.selectedMediaIds.contains(
+                                                                interactionState.selectedMediaIds.contains(
                                                                     mediaItem.id
                                                                 )
-                                                            val currView = state.currentViewMode
+                                                            val currView = configState.currentViewMode
                                                             MediaItemCard(
                                                                 size = when (currView) {
                                                                     GalleryViewMode.DAY -> 400
@@ -480,9 +424,9 @@ fun GalleryScreen(
                                                                 },
                                                                 media = mediaItem,
                                                                 isSelected = isSelected,
-                                                                selectionMode = state.selectionMode,
+                                                                selectionMode = interactionState.selectionMode,
                                                                 onClick = {
-                                                                    if (state.selectionMode) {
+                                                                    if (interactionState.selectionMode) {
                                                                         viewModel.setEvent(
                                                                             GalleryEvent.ToggleMediaSelection(
                                                                                 mediaItem.id
@@ -497,7 +441,7 @@ fun GalleryScreen(
                                                                     }
                                                                 },
                                                                 onLongClick = {
-                                                                    if (!state.selectionMode) {
+                                                                    if (!interactionState.selectionMode) {
                                                                         viewModel.setEvent(
                                                                             GalleryEvent.EnterSelectionMode
                                                                         )
@@ -529,18 +473,18 @@ fun GalleryScreen(
                 }
             }
 
-            val isMainGallery = state.openedAlbum == null && state.openedPersonCluster == null
-            val hasContent = if (state.selectedTab == GalleryTab.ALBUMS) {
-                state.albums.isNotEmpty()
-            } else if (state.selectedTab == GalleryTab.OTHERS && state.othersSelection == OthersSelection.PEOPLE) {
-                state.peopleClusters.isNotEmpty()
+            val isMainGallery = interactionState.openedAlbum == null && interactionState.openedPersonCluster == null
+            val hasContent = if (interactionState.selectedTab == GalleryTab.ALBUMS) {
+                contentState.albums.isNotEmpty()
+            } else if (interactionState.selectedTab == GalleryTab.OTHERS && interactionState.othersSelection == OthersSelection.PEOPLE) {
+                contentState.peopleClusters.isNotEmpty()
             } else {
-                state.displayedMediaList.isNotEmpty()
+                contentState.displayedMediaList.isNotEmpty()
             }
             val shouldShowBar by remember(hasContent, isScrollingUp) {
                 derivedStateOf { !hasContent || isScrollingUp }
             }
-            val bottomBarVisible = state.selectionMode || (isMainGallery && shouldShowBar)
+            val bottomBarVisible = interactionState.selectionMode || (isMainGallery && shouldShowBar)
 
             val barOffset by animateDpAsState(
                 targetValue = if (bottomBarVisible) 0.dp else 150.dp, label = "barOffset"
@@ -563,10 +507,10 @@ fun GalleryScreen(
                     }
                     .zIndex(1f)) {
                 AnimatedContent(
-                    targetState = state.selectionMode, label = "BottomBarSwap"
+                    targetState = interactionState.selectionMode, label = "BottomBarSwap"
                 ) { isSelectionMode ->
                     if (isSelectionMode) {
-                        val selectedMedia =state.masterMediaList.filter { it.id in state.selectedMediaIds }
+                        val selectedMedia =contentState.masterMediaList.filter { it.id in interactionState.selectedMediaIds }
                         DetailFloatingBar(
                             isFavorite = false, onActionClick = { action ->
                                 viewModel.setEvent(
@@ -586,11 +530,12 @@ fun GalleryScreen(
                     } else if (isMainGallery) {
                         with(sharedTransitionScope) {
                             FloatingGalleryBar(
-                                selectedTab = state.selectedTab, onClick = {
+                                selectedTab = interactionState.selectedTab, onClick = {
                                     coroutineScope.launch {
                                         gridState.animateScrollToItem(0)
                                     }
                                 }, onTabSelected = { tab ->
+
                                     viewModel.setEvent(
                                         GalleryEvent.OnTabSelected(tab)
                                     )

@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.jetpackcomposegalleryapp.core.presentation.components.bouncyClick
-import com.example.jetpackcomposegalleryapp.presentation.gallery.GalleryTab
+import com.example.jetpackcomposegalleryapp.presentation.gallery.model.GalleryTab
 import kotlinx.coroutines.Job
 
 
