@@ -5,7 +5,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
-import com.example.jetpackcomposegalleryapp.domain.repository.DataStoreSettingsRepository
+import com.example.jetpackcomposegalleryapp.data.repository.DataStoreSettingsRepositoryImpl
 import com.example.jetpackcomposegalleryapp.domain.repository.SettingsRepository
 import dagger.Binds
 import dagger.Module
@@ -23,7 +23,7 @@ abstract class SettingsBindingModule {
     @Binds
     @Singleton
     abstract fun bindSettingsRepository(
-        dataStoreSettingsRepository: DataStoreSettingsRepository
+        dataStoreSettingsRepository: DataStoreSettingsRepositoryImpl
     ): SettingsRepository
 
 

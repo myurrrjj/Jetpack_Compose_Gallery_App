@@ -37,6 +37,7 @@ import com.example.jetpackcomposegalleryapp.presentation.navigation.Route.Detail
 import com.example.jetpackcomposegalleryapp.presentation.navigation.Route.DirtyTest
 import com.example.jetpackcomposegalleryapp.presentation.navigation.Route.Gallery
 import com.example.jetpackcomposegalleryapp.presentation.navigation.Route.Settings
+import com.example.jetpackcomposegalleryapp.presentation.search.SearchScreen
 import com.example.jetpackcomposegalleryapp.presentation.settings.SettingsScreen
 import com.example.jetpackcomposegalleryapp.trial.DirtyTestScreen
 
@@ -110,6 +111,7 @@ fun GalleryNavGraph() {
                 }
 
                 GalleryEffect.NavigateToSettings -> navController.navigate(Settings)
+                GalleryEffect.NavigateToSearch -> navController.navigate(Route.Search)
             }
         }
 
@@ -166,8 +168,18 @@ fun GalleryNavGraph() {
                     onNavigateBack = { navController.popBackStack() })
             }
 
-            composable<Route.Search>{
-
+            composable<Route.Search>(
+                enterTransition = { fadeIn(tween(300)) },
+                exitTransition = { fadeOut(tween(300, delayMillis = 90)) },
+                popEnterTransition = { fadeIn(tween(300)) },
+                popExitTransition = { fadeOut(tween(300)) }
+            ) {
+                SearchScreen(
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this@composable,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToDetail = { mediaId -> navController.navigate(Detail(mediaId)) },
+                )
             }
         }
     }

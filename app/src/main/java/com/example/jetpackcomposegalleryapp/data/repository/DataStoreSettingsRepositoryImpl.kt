@@ -1,6 +1,5 @@
-package com.example.jetpackcomposegalleryapp.domain.repository
+package com.example.jetpackcomposegalleryapp.data.repository
 
-import androidx.compose.ui.platform.isDebugInspectorInfoEnabled
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -9,13 +8,14 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.jetpackcomposegalleryapp.domain.model.AppSettings
 import com.example.jetpackcomposegalleryapp.domain.model.GalleryViewMode
+import com.example.jetpackcomposegalleryapp.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 import javax.inject.Inject
 
-class DataStoreSettingsRepository @Inject constructor(
+class DataStoreSettingsRepositoryImpl @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) : SettingsRepository {
     private object PreferencesKey {
@@ -38,9 +38,9 @@ class DataStoreSettingsRepository @Inject constructor(
             } catch (e: Exception) {
                 GalleryViewMode.DAY
             }
-            AppSettings(
-                autoPlayVideo = autoPlay, defaultGalleryViewMode = viewMode
-            )
+        AppSettings(
+            autoPlayVideo = autoPlay, defaultGalleryViewMode = viewMode
+        )
         }
 
     override suspend fun updateAutoPlayVideos(enabled: Boolean) {

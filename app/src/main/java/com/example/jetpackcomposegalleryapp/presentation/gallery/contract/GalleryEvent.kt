@@ -38,4 +38,7 @@ sealed class GalleryEvent : ViewEvent {
 
     object StartFaceIndexing : GalleryEvent()
     object OnSettingsClicked : GalleryEvent()
+
+    object onSearchClicked : GalleryEvent()
+
 }

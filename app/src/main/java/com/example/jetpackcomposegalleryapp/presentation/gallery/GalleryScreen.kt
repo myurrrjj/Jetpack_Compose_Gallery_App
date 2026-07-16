@@ -137,7 +137,9 @@ fun GalleryScreen(
                     scrollBehavior = scrollBehaviour
                 )
             } else {
-                GalleryTopBar(
+                GalleryTopBar(onSearchClick = {
+                    viewModel.setEvent(GalleryEvent.onSearchClicked)
+                },
                     mediaCount = mediaCount, scrollBehaviour = scrollBehaviour, onSettingsClick = {
                         viewModel.setEvent(
                             GalleryEvent.OnSettingsClicked

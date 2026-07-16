@@ -1,7 +1,7 @@
 package com.example.jetpackcomposegalleryapp.di
 
+import com.example.jetpackcomposegalleryapp.data.repository.FaceRepositoryImpl
 import com.example.jetpackcomposegalleryapp.domain.repository.FaceRepository
-import com.example.jetpackcomposegalleryapp.domain.repository.FaceRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

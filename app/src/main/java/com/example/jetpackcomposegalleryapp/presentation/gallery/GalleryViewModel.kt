@@ -216,6 +216,8 @@ class GalleryViewModel @Inject constructor(
             GalleryEvent.OnSettingsClicked -> {
                 setEffect { GalleryEffect.NavigateToSettings }
             }
+
+            GalleryEvent.onSearchClicked -> setEffect { GalleryEffect.NavigateToSearch }
         }
     }
 

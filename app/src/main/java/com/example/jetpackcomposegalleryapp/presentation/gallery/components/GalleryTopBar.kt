@@ -30,7 +30,8 @@ fun GalleryTopBar(
     mediaCount: Int,
     scrollBehaviour: TopAppBarScrollBehavior,
     modifier: Modifier = Modifier,
-    onSettingsClick:()->Unit
+    onSettingsClick:()->Unit,
+    onSearchClick:()-> Unit
 ) {
     TopAppBar(
         title = {
@@ -58,7 +59,7 @@ fun GalleryTopBar(
         },
         actions = {
             IconButton(
-                onClick = {}, modifier = Modifier.padding(end = 4.dp),
+                onClick = onSearchClick, modifier = Modifier.padding(end = 4.dp),
 
                 ) {
                 Icon(
